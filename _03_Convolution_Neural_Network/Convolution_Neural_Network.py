@@ -66,9 +66,49 @@ def read_data():
     return dataset_train, dataset_val, data_loader_train, data_loader_val
 
 def main():
-    model = NeuralNetwork() # 若有参数则传入参数
+    # 创建神经网络模型实例
+    model = NeuralNetwork()
+
+    # 定义损失函数和优化器
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+
+    # 加载数据
+    dataset_train, dataset_val, data_loader_train, data_loader_val = read_data()
+
+    # 设置设备为 GPU 或 CPU
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
+    # 训练模型
+    num_epochs = 10
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        for i, (inputs, labels) in enumerate(data_loader_train):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            # 梯度清零
+            optimizer.zero_grad()
+
+            # 前向传播、反向传播和优化
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            # 统计损失
+            running_loss += loss.item()
+            if i % 200 == 199:
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, i + 1, running_loss / 200))
+                running_loss = 0.0
+
+    # 保存模型参数
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
-    model.load_state_dict(torch.load(parent_dir + '/pth/model.pth'))
+    torch.save(model.state_dict(), parent_dir + '/pth/model.pth')
+
     return model
+
     
