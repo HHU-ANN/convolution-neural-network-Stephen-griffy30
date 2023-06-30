@@ -1,14 +1,20 @@
 import os
+
+
+
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-
 num_epochs = 25
 batch_size = 50
 learning_rate = 0.01
+from torch.utils.data import DataLoader
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device = torch.device('cpu')
 
 def read_data():
@@ -24,30 +30,31 @@ def read_data():
     return dataset_train, dataset_val, data_loader_train, data_loader_val
 
 def conv3x3(in_channels, out_channels, stride=1):
-    return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+    return nn.Conv2d(in_channels, out_channels, kernel_size=3,
+                     stride=stride, padding=1, bias=False)
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = conv3x3(in_channels, out_channels, stride)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(out_channels, out_channels)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.downsample = downsample
+        def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+            super(ResidualBlock, self).__init__()
+            self.conv1 = conv3x3(in_channels, out_channels, stride)
+            self.bn1 = nn.BatchNorm2d(out_channels)
+            self.relu = nn.ReLU(inplace=True)
+            self.conv2 = conv3x3(out_channels, out_channels)
+            self.bn2 = nn.BatchNorm2d(out_channels)
+            self.downsample = downsample
 
-    def forward(self, x):
-        residual = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        if self.downsample:
-            residual = self.downsample(x)
-        out += residual
-        out = self.relu(out)
-        return out
+        def forward(self, x):
+            residual = x
+            out = self.conv1(x)
+            out = self.bn1(out)
+            out = self.relu(out)
+            out = self.conv2(out)
+            out = self.bn2(out)
+            if self.downsample:
+                residual = self.downsample(x)
+            out += residual
+            out = self.relu(out)
+            return out
 
 class NeuralNetwork(nn.Module):
     def __init__(self, block, layers, num_classes=10):
@@ -87,16 +94,56 @@ class NeuralNetwork(nn.Module):
         out = self.fc(out)
         return out
 
+model = NeuralNetwork(ResidualBlock, [2, 2, 2]).to(device)
+
+# criterion = nn.CrossEntropyLoss()
+# optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+# 
+# def update_lr(optimizer, lr):
+#         for param_group in optimizer.param_groups:
+#             param_group['lr'] = lr
+# 
+# train_dataset, test_dataset, train_loader, test_loader = read_data()
+# total_step = len(train_loader)
+# curr_lr = learning_rate
+# for epoch in range(num_epochs):
+#     for i, (images, labels) in enumerate(train_loader):
+#         images = images.to(device)
+#         labels = labels.to(device)
+# 
+#         # Forward pass
+#         outputs = model(images)
+#         loss = criterion(outputs, labels)
+# 
+#         # Backward and optimize
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
+# 
+#         if (i + 1) % 100 == 0:
+#             print("Epoch [{}/{}], Step [{}/{}] Loss: {:.4f}"
+#                     .format(epoch + 1, num_epochs, i + 1, total_step, loss.item()))
+# 
+#     if (epoch + 1) % 20 == 0:
+#         curr_lr /= 3
+#         update_lr(optimizer, curr_lr)
+# 
+# torch.save(model.state_dict(), 'model.pth')
+
+# 
+# def read_data():
+#     dataset_train = torchvision.datasets.CIFAR10(root='../data/exp03', train=True, download=True, transform=torchvision.transforms.ToTensor())
+#     dataset_val = torchvision.datasets.CIFAR10(root='../data/exp03', train=False, download=False, transform=torchvision.transforms.ToTensor())
+#     data_loader_train = DataLoader(dataset=dataset_train, batch_size=256, shuffle=True)
+#     data_loader_val = DataLoader(dataset=dataset_val, batch_size=256, shuffle=False)
+#     return dataset_train, dataset_val, data_loader_train, data_loader_val
+
 def main():
     model = NeuralNetwork(ResidualBlock, [2, 2, 2]).to(device)
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
     model.load_state_dict(torch.load(parent_dir + '/pth/model.pth'))
     return model
-
-if __name__ == "__main__":
-    model = main()
-    # 使用模型进行预测或其他操作
 
     
     
